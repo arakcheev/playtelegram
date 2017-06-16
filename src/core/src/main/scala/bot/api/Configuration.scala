@@ -38,9 +38,14 @@ object Configuration{
       }
     }
 
+    // Resolve reference.conf ourselves because ConfigFactory.defaultReference resolves
+    // values, and we won't have a value for `play.server.dir` until all our config is combined.
+    val referenceConfig: Config = ConfigFactory.parseResources(classLoader, "reference.conf")
+
     val combinedConfig: Config = Seq(
                                       systemConfig,
-                                      applicationConfig
+                                      applicationConfig,
+                                      referenceConfig
                                     ).reduceLeft(_ withFallback _)
 
     val resolvedConfig = combinedConfig.resolve

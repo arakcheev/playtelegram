@@ -1,4 +1,5 @@
 import sbt._
+import buildinfo.BuildInfo
 
 object Dependencies {
   // major.minor are in sync with the elasticsearch releases
@@ -72,6 +73,10 @@ object Dependencies {
     Seq("com.typesafe.play" %% "play-json" % v)
   }
 
+  def scalaScriperDeps(v: String = "1.2.0"): Seq[ModuleID] = {
+    Seq("net.ruippeixotog" %% "scala-scraper" % v)
+  }
+
 
   def botCoreDeps: Seq[ModuleID] = {
     akkaDeps() ++ loggerDeps() ++ logbakcDeps() ++ configDeps() ++ injectDeps()
@@ -79,5 +84,26 @@ object Dependencies {
 
   def botTelegramApiDeps: Seq[ModuleID] = {
     akkaDeps() ++ akkaHttp() ++ jacksonDeps() ++ loggerDeps() ++ logbakcDeps() ++ apacheCommonsDeps()
+  }
+
+  def sbtDependencies(sbtVersion: String, scalaVersion: String): Seq[ModuleID] = {
+    def sbtPluginDep(sbtVersion: String, scalaVersion: String, moduleId: ModuleID) = {
+      moduleId.extra(
+                      "sbtVersion" -> CrossVersion.binarySbtVersion(sbtVersion),
+                      "scalaVersion" -> CrossVersion.binaryScalaVersion(scalaVersion)
+                    )
+    }
+
+    def sbtDep(moduleId: ModuleID) = sbtPluginDep(sbtVersion, scalaVersion, moduleId)
+
+    Seq(
+         sbtDep("com.typesafe.sbt" % "sbt-twirl" % "1.3.0"),
+         sbtDep("com.typesafe.sbt" % "sbt-native-packager" % "1.1.6")
+       )
+  }
+
+  def botWsDeps = {
+    akkaDeps() ++ loggerDeps() ++ logbakcDeps() ++ configDeps() ++ injectDeps() ++
+    playJson() ++ scalaScriperDeps()
   }
 }

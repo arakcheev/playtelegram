@@ -34,11 +34,13 @@ class AkkaRequestExecutor @Inject()(configuration: Configuration)
                                    (implicit system: ActorSystem, materializer: Materializer, ec: ExecutionContext) extends RequestExecutor with LazyLogging {
 
   private val token = configuration.getString("bot.token").getOrElse(sys.error("Missing token in config"))
+  private val baseUrl = configuration.getString("bot.apiUrl").getOrElse(sys.error("Missing apiUrl in config"))
 
   import HttpMarshalling._
 
+
 //  private val apiBaseUrl = s"https://149.154.167.197/bot$token/"
-  private val apiBaseUrl = s"https://api.telegram.org/bot$token/"
+  private val apiBaseUrl = s"$baseUrl$token/"
 
   private val http: HttpExt = Http()
 

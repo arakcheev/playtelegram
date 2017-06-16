@@ -4,18 +4,16 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import com.google.inject.{Inject, Singleton}
+import bot.core.RunStop
 import com.typesafe.scalalogging.LazyLogging
 import info.mukel.telegrambot4s.methods.{DeleteWebhook, GetUpdates}
 import info.mukel.telegrambot4s.models.Update
-import bot.core.RunStop
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
-@Singleton
-class Pooling @Inject()(router: Router, requestExecutor: RequestExecutor)
+private [bot] class Pooling (router: Router, requestExecutor: RequestExecutor)
 (implicit val materializer: Materializer, system: ActorSystem) extends RunStop with LazyLogging {
 
   implicit val ex: ExecutionContext = system.dispatcher

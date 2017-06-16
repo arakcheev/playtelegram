@@ -60,7 +60,9 @@ final class DefaultApplication @Inject()(
     mode match {
       case Mode.Dev ⇒
         new Pooling(router, requestExecutor)(materializer, actorSystem)
-      case _ ⇒ throw new NotImplementedError
+      case _ ⇒
+//        throw new NotImplementedError
+        new Pooling(router, requestExecutor)(materializer, actorSystem)
     }
   }
 
