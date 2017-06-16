@@ -71,12 +71,18 @@ private[i18n] object UTF8BundleControl extends ResourceBundle.Control with LazyL
     import java.io.InputStreamReader
     import java.util.PropertyResourceBundle
 
-    logger.warn(s"newBundle baseName $baseName locale $locale")
-
     // The below is an approximate copy of the default Java implementation
-    def resourceName = toResourceName(toBundleName(baseName, locale), Messages.FileExt)
-
-    logger.warn(s"resourceName $resourceName")
+    def resourceName = {
+      locale match {
+        case null ⇒ baseName
+        case l ⇒
+          l.getLanguage match {
+            case null ⇒ baseName
+            case "" ⇒ baseName
+            case lang ⇒ baseName + "." + lang
+          }
+      }
+    }
 
     def stream: Option[InputStream] =
       if (reload) {
