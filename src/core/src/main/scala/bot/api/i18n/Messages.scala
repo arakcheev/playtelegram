@@ -72,6 +72,7 @@ private[i18n] object UTF8BundleControl extends ResourceBundle.Control with LazyL
     import java.util.PropertyResourceBundle
 
     // The below is an approximate copy of the default Java implementation
+    //todo: ay be its not best realisation for this method. Need to check nulls of locale and language
     def resourceName = {
       locale match {
         case null ⇒ baseName

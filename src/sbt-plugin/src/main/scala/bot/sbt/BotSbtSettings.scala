@@ -19,8 +19,6 @@ object BotSbtSettings {
            "com.playtelegram" %% "bot-starter" % bot.core.BotVersion.current
          },
 
-         fork in run := true,
-
          // Adds app directory's source files to continuous hot reloading
          watchSources ++= {
            ((sourceDirectory in Compile).value ** "*").get

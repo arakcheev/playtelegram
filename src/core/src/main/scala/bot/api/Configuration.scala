@@ -27,9 +27,11 @@ object Configuration{
         Option(System.getProperties.getProperty(key))
 
       {
-        setting("config.resource").map(resource => ConfigFactory.parseResources(classLoader, resource.toString))
+        setting("config.resource").map{resource =>
+          ConfigFactory.parseResources(classLoader, resource.toString)}
       } orElse {
-        setting("config.file").map(fileName => ConfigFactory.parseFileAnySyntax(new File(fileName.toString)))
+        setting("config.file").map{fileName =>
+          ConfigFactory.parseFileAnySyntax(new File(fileName.toString))}
       } getOrElse {
         val parseOptions = ConfigParseOptions.defaults
           .setClassLoader(classLoader)
