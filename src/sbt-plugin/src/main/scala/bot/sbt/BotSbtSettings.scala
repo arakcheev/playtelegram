@@ -3,7 +3,6 @@ package bot.sbt
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport._
-import com.typesafe.sbt.packager.archetypes.JavaAppPackaging
 
 object BotSbtSettings {
 

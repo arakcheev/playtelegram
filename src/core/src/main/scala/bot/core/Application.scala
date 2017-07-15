@@ -1,15 +1,14 @@
 package bot.core
 
 import java.io.File
+
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.Logger
 import bot.core.Environment.Mode
 import bot.api.Configuration
-import bot.server.Router
-import bot.server.RequestExecutor
-import bot.server.Pooling
+import bot.server.{Pooling, RequestExecutor, Router, WebHook}
 
 import scala.concurrent.Future
 
@@ -60,9 +59,10 @@ final class DefaultApplication @Inject()(
     mode match {
       case Mode.Dev ⇒
         new Pooling(router, requestExecutor)(materializer, actorSystem)
+      case Mode.Prod ⇒
+        new WebHook(configuration, router, requestExecutor)(materializer, actorSystem)
       case _ ⇒
-//        throw new NotImplementedError
-        new Pooling(router, requestExecutor)(materializer, actorSystem)
+        throw new NotImplementedError(s"Cant start application in $mode mode")
     }
   }
 
