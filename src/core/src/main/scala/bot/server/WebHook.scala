@@ -2,16 +2,16 @@ package bot.server
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.http.scaladsl.server.Directives.{as, complete, entity, pathEndOrSingleSlash, pathPrefix}
+import akka.http.scaladsl.server.Directives.{as, complete, entity, pathEndOrSingleSlash, pathPrefix, reject}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import bot.api.Configuration
+import bot.api.{Configuration, mvc}
 import bot.core.RunStop
 import com.typesafe.scalalogging.LazyLogging
 import info.mukel.telegrambot4s.marshalling.HttpMarshalling
-import info.mukel.telegrambot4s.methods.SetWebhook
+import info.mukel.telegrambot4s.methods.{ApiRequest, SetWebhook}
 import info.mukel.telegrambot4s.models.Update
 
 import scala.concurrent.Future
@@ -39,33 +39,61 @@ private[bot] class WebHook(configuration: Configuration, router: Router, request
 
   import HttpMarshalling._
 
+  private def executeUpdate(update: Update): Future[StatusCode with Product with Serializable] = {
+
+    def aggregateRequests(requests: mvc.SeqResult): Future[StatusCode with Product with Serializable] = {
+      val count = requests.length
+      Source
+        .fromIterator(() ⇒ requests.iterator)
+        .runFoldAsync(0) { case (acc, req) ⇒
+          requestExecutor(req).map { response ⇒
+            logger.trace(s"Request ${req.methodName} is executed. Response $response")
+            acc + 1
+          } recover{
+            case NonFatal(throwable) ⇒
+              logger.error("Error execute request ${req.methodName}.", throwable)
+              acc
+          }
+        }
+        .map{executed ⇒
+          logger.trace("All request was executed.")
+          if(executed != count) {
+            logger.trace("executed != count")
+            StatusCodes.BadRequest
+          }
+          else StatusCodes.OK
+      }
+    }
+
+    router
+      .handleUpdate(update)
+      .flatMap(aggregateRequests)
+      .recover{
+        case NonFatal(e) ⇒
+          logger.error(s"Error execute request.", e)
+          StatusCodes.InternalServerError
+    }
+  }
+
   /**
     * Webhook handler.
     *
     * @return Route handler to process updates.
     */
-  private def webhookRoute = {
-    pathPrefix(prefix){
+  private def webhookRoute: Route = {
+    pathPrefix(prefix) {
       pathEndOrSingleSlash {
         entity(as[Update]) {
-          update =>
+          update => {
+            logger.trace(s"Got new update. $update")
             try {
-              router.handleUpdate(update).map { requests ⇒
-                Source.fromIterator(() ⇒ requests.iterator)
-                  .runFoldAsync(0) { case (acc, req) ⇒
-                    requestExecutor(req).map { response ⇒
-                      acc + 1
-                    }
-                  }
-              } recover {
-                case NonFatal(e) ⇒
-                  logger.error(s"Error execute request.", e)
-              }
+              complete(executeUpdate(update))
             } catch {
               case NonFatal(e) =>
                 logger.error("Caught exception in update handler", e)
+                reject()
             }
-            complete(StatusCodes.OK)
+          }
         }
       }
     }
@@ -90,9 +118,9 @@ private[bot] class WebHook(configuration: Configuration, router: Router, request
   override def run() = {
     requestExecutor(SetWebhook(webhookUrl))
       .onComplete {
-        case Success(true)  => attach() // Spawn WebRoute
+        case Success(true) => attach() // Spawn WebRoute
         case Success(false) => logger.error("Failed to set webhook.")
-        case Failure(e)     => logger.error("Failed to set webhook", e)
+        case Failure(e) => logger.error("Failed to set webhook", e)
       }
   }
 
